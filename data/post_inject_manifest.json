@@ -1,0 +1,158 @@
+[
+  {
+    "fix_id": "A10_FIX",
+    "n_customers": 143,
+    "n_orders_patched": 2911
+  },
+  {
+    "fix_id": "A23_FIX",
+    "n_deliveries_patched": 13740,
+    "avg_distance_reduction_pct": 8.0
+  },
+  {
+    "anomaly_id": "A19",
+    "customer_id": 4417,
+    "wrong_location_id": 5001,
+    "true_location_id": 2972,
+    "offset_km": 12.4,
+    "n_deliveries_affected": 30,
+    "n_failed_injected": 25
+  },
+  {
+    "anomaly_id": "A20",
+    "tronton_scale_factor": 2.1733473547586484,
+    "cde_overload_count": 6430,
+    "cde_total_deliveries": 79378,
+    "cde_overload_share": 0.081
+  },
+  {
+    "fix_id": "A04_LICENSE_COMPLIANCE_FIX",
+    "n_heavy_deliveries": 31264,
+    "n_reassigned_to_compliant": 19934
+  },
+  {
+    "anomaly_id": "A04",
+    "n_mismatch_drivers": 41,
+    "n_reassigned_deliveries": 1435,
+    "baseline_fail_rate": 0.0774,
+    "actual_fail_rate": 0.2474,
+    "fail_ratio": 3.19,
+    "baseline_hb_rate": 0.1323,
+    "actual_hb_rate": 0.3171,
+    "hb_ratio": 2.4,
+    "mismatch_driver_ids": [
+      456,
+      343,
+      1402,
+      208,
+      1026,
+      1894,
+      1673,
+      580,
+      1756,
+      1796,
+      1701,
+      805,
+      1603,
+      203,
+      684,
+      1261,
+      1018,
+      544,
+      292,
+      714,
+      1466,
+      1989,
+      994,
+      772,
+      1881,
+      847,
+      302,
+      755,
+      155,
+      220,
+      718,
+      1360,
+      403,
+      731,
+      1395,
+      1548,
+      404,
+      212,
+      1666,
+      1832,
+      920
+    ]
+  },
+  {
+    "anomaly_id": "A11",
+    "workshop_location_id": 19,
+    "workshop_code": "WS-07",
+    "n_repeat_rows_injected": 325
+  },
+  {
+    "anomaly_id": "A12",
+    "n_corridor_rainy_deliveries": 9006,
+    "baseline_accident_rate": 0.00322,
+    "actual_accident_rate": 0.00899,
+    "ratio": 2.79
+  },
+  {
+    "anomaly_id": "A13",
+    "rest_area_location_ids": [
+      253,
+      260,
+      267
+    ],
+    "n_flagged_deliveries": 7389,
+    "avg_extra_minutes": 47.0
+  },
+  {
+    "anomaly_id": "A16",
+    "vehicle_ids": [
+      47,
+      150
+    ],
+    "windows": [
+      [
+        "2025-08-04",
+        "2025-08-24"
+      ],
+      [
+        "2025-11-02",
+        "2025-11-19"
+      ]
+    ],
+    "n_deliveries_flagged": 44
+  },
+  {
+    "anomaly_id": "A18",
+    "n_overwork_driver_days": 14274,
+    "n_nextday_deliveries": 8918,
+    "baseline_incident_rate": 0.24015,
+    "actual_incident_rate": 0.74445,
+    "ratio": 3.1
+  },
+  {
+    "anomaly_id": "A22",
+    "n_night_deliveries": 54569,
+    "fuel_bump_pct": 9.0,
+    "n_overspeed_events_added": 9822
+  },
+  {
+    "anomaly_id": "A26",
+    "n_old_vehicle_records": 2254,
+    "target_multiplier": 2.1,
+    "baseline_young_avg_cost": 1949175.0,
+    "actual_old_avg_cost": 4147110.0,
+    "ratio": 2.13
+  },
+  {
+    "anomaly_id": "A14",
+    "n_high_hb_vehicles": 60,
+    "n_boosted_vehicles": 60,
+    "baseline_cost_per_km": 8.33,
+    "actual_cost_per_km_high_group": 12.22,
+    "ratio": 1.47
+  }
+]

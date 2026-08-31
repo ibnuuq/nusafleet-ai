@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: nusafleet-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nusafleet}
+      POSTGRES_USER: ${POSTGRES_USER:-nusafleet_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nusafleet_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nusafleet_admin} -d ${POSTGRES_DB:-nusafleet}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: nusafleet-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Uncomment untuk GPU (butuh nvidia-container-toolkit):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nusafleet-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nusafleet_admin}:${POSTGRES_PASSWORD:-nusafleet_password}@db:5432/${POSTGRES_DB:-nusafleet}
+      DATABASE_URL_RO: postgresql://nusafleet_ro:${POSTGRES_RO_PASSWORD:-nusafleet_ro}@db:5432/${POSTGRES_DB:-nusafleet}
+      OLLAMA_BASE_URL: http://ollama:11434
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./src:/app/src
+    command: ["python", "-m", "src.api.main"]
+
+volumes:
+  db_data:
+  ollama_data:

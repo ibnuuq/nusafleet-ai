@@ -1,0 +1,336 @@
+{
+  "A01": {
+    "status": "PASS",
+    "detail": [
+      {
+        "kpl_before_may": "8.80",
+        "kpl_from_may": "7.94",
+        "pct_drop": "9.8",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A02": {
+    "status": "PASS",
+    "detail": [
+      {
+        "avg_transit_jul": "3.20",
+        "avg_transit_aug": "4.29",
+        "pct_increase": "34.2",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A03": {
+    "status": "PASS",
+    "detail": [
+      {
+        "avg_breakdown_overdue": "26.937",
+        "avg_breakdown_normal": "1.202",
+        "ratio": "22.40",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A04": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_mismatch_drivers": 41,
+        "fail_rate_mismatch": "0.2474",
+        "fail_rate_baseline": "0.0774",
+        "fail_ratio": "3.19",
+        "hb_rate_mismatch": "0.3240",
+        "hb_rate_baseline": "0.1438",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A05": {
+    "status": "PASS",
+    "detail": [
+      {
+        "op_cost_jul": "979304310",
+        "op_cost_aug": "1276901882",
+        "mom_pct": "30.4",
+        "fuel_pct_change": "12.9",
+        "overtime_pct_change": "2558.9",
+        "maintenance_pct_change": "60.5",
+        "volume_pct_change": "0.0",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A06": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_over_capacity_tx": 214,
+        "n_vehicles_over_capacity": 3,
+        "status": "PASS"
+      }
+    ]
+  },
+  "A07": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_rollback_events": 116,
+        "n_vehicles_affected": 7,
+        "status": "PASS"
+      }
+    ]
+  },
+  "A08": {
+    "status": "PASS",
+    "detail": [
+      {
+        "ratio_jtm01": "1.225",
+        "ratio_fleet": "1.029",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A09": {
+    "status": "PASS",
+    "detail": [
+      {
+        "fail_rate_weekend": "0.1478",
+        "fail_rate_weekday": "0.0734",
+        "ratio": "2.01",
+        "dominant_reason": "customer_closed",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A10": {
+    "status": "PASS",
+    "detail": [
+      {
+        "breach_rate_before": "0.0059",
+        "breach_rate_after": "0.0219",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A11": {
+    "status": "PASS",
+    "detail": [
+      {
+        "repeat_rate_ws07": "0.3221",
+        "repeat_rate_baseline": "0.0288",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A12": {
+    "status": "PASS",
+    "detail": [
+      {
+        "accident_rate_rainy": "0.00899",
+        "accident_rate_dry": "0.00322",
+        "ratio": "2.79",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A13": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_rest_area_detected": 3,
+        "avg_idle_minutes_flagged": "47.1",
+        "n_flagged_deliveries": 7189,
+        "status": "PASS"
+      }
+    ]
+  },
+  "A14": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_high_hb_vehicles": 60,
+        "cost_per_km_high": "246.62",
+        "cost_per_km_normal": "170.01",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A15": {
+    "status": "PASS",
+    "detail": [
+      {
+        "avg_twin_date_volume": "1353",
+        "avg_normal_daily_volume": "539",
+        "pct_increase": "151.0",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A16": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_vehicles_affected": 977,
+        "n_deliveries_overlapping": 30514,
+        "status": "PASS"
+      }
+    ]
+  },
+  "A17": {
+    "status": "PASS",
+    "detail": [
+      {
+        "region_code": "SULSEL",
+        "avg_price_per_liter": "16352",
+        "relative_to_cheapest": "1.062",
+        "note": "higher-cost region (by design)"
+      },
+      {
+        "region_code": "BALI",
+        "avg_price_per_liter": "16189",
+        "relative_to_cheapest": "1.051",
+        "note": "higher-cost region (by design)"
+      },
+      {
+        "region_code": "SUMUT",
+        "avg_price_per_liter": "16053",
+        "relative_to_cheapest": "1.042",
+        "note": "higher-cost region (by design)"
+      },
+      {
+        "region_code": "SUMSEL",
+        "avg_price_per_liter": "15899",
+        "relative_to_cheapest": "1.032",
+        "note": "higher-cost region (by design)"
+      },
+      {
+        "region_code": "JATENG",
+        "avg_price_per_liter": "15426",
+        "relative_to_cheapest": "1.002",
+        "note": "baseline"
+      },
+      {
+        "region_code": "DKI",
+        "avg_price_per_liter": "15422",
+        "relative_to_cheapest": "1.001",
+        "note": "baseline"
+      },
+      {
+        "region_code": "BANTEN",
+        "avg_price_per_liter": "15410",
+        "relative_to_cheapest": "1.001",
+        "note": "baseline"
+      },
+      {
+        "region_code": "JABAR",
+        "avg_price_per_liter": "15404",
+        "relative_to_cheapest": "1.000",
+        "note": "baseline"
+      },
+      {
+        "region_code": "JATIM",
+        "avg_price_per_liter": "15401",
+        "relative_to_cheapest": "1.000",
+        "note": "baseline"
+      }
+    ]
+  },
+  "A18": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_overwork_driver_days": 14274,
+        "n_nextday_deliveries": 199987,
+        "incident_rate_nextday": "0.5468",
+        "incident_rate_baseline": "0.2522",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A19": {
+    "status": "PASS",
+    "detail": [
+      {
+        "cust_04417_address_not_found_count": 25,
+        "fleet_wide_address_not_found_count": 3879,
+        "pct_share": "0.6",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A20": {
+    "status": "PASS",
+    "detail": [
+      {
+        "tronton_avg_load_factor": "0.411",
+        "cde_overload_pct": "13.7",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A21": {
+    "status": "PASS",
+    "detail": [
+      {
+        "compliance_before_may": "0.924",
+        "compliance_from_may": "0.564",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A22": {
+    "status": "PASS",
+    "detail": [
+      {
+        "fuel_per_km_night": "2166.5",
+        "fuel_per_km_day": "1986.9",
+        "fuel_ratio": "1.090",
+        "overspeed_rate_night": "0.292",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A23": {
+    "status": "PASS",
+    "detail": [
+      {
+        "avg_distance_aug": "76.3",
+        "avg_distance_sep": "70.1",
+        "pct_change_distance": "-8.2",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A24": {
+    "status": "PASS",
+    "detail": [
+      {
+        "n_bad_timestamp_rows": 5943,
+        "pct_of_all_deliveries": "2.97",
+        "status": "PASS"
+      }
+    ]
+  },
+  "A25": {
+    "status": "PASS",
+    "detail": [
+      {
+        "peak_month": 3,
+        "trough_month": 4,
+        "status": "PASS"
+      }
+    ]
+  },
+  "A26": {
+    "status": "PASS",
+    "detail": [
+      {
+        "cost_per_km_old": "1164.10",
+        "cost_per_km_young": "543.15",
+        "ratio": "2.14",
+        "status": "PASS"
+      }
+    ]
+  }
+}

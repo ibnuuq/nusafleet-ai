@@ -1,0 +1,730 @@
+{
+  "Q001": {
+    "status": "OK",
+    "n_rows": 1,
+    "sample": [
+      {
+        "total_delivered": 184737
+      }
+    ]
+  },
+  "Q002": {
+    "status": "OK",
+    "n_rows": 12,
+    "sample": [
+      {
+        "depot": "BLI-01",
+        "n_active_vehicles": 73
+      },
+      {
+        "depot": "BTN-01",
+        "n_active_vehicles": 72
+      },
+      {
+        "depot": "JBR-01",
+        "n_active_vehicles": 70
+      }
+    ]
+  },
+  "Q003": {
+    "status": "OK",
+    "n_rows": 1,
+    "sample": [
+      {
+        "avg_transit_hours": "3.86",
+        "n_valid_rows": 178794,
+        "n_excluded_bad_rows": 5943
+      }
+    ]
+  },
+  "Q004": {
+    "status": "OK",
+    "n_rows": 12,
+    "sample": [
+      {
+        "month": 1,
+        "avg_price_idr": "14321"
+      },
+      {
+        "month": 2,
+        "avg_price_idr": "14319"
+      },
+      {
+        "month": 3,
+        "avg_price_idr": "14323"
+      }
+    ]
+  },
+  "Q005": {
+    "status": "OK",
+    "n_rows": 10,
+    "sample": [
+      {
+        "customer_code": "CUST-01598",
+        "company_name": "Perum Napitupulu",
+        "n_orders": 38
+      },
+      {
+        "customer_code": "CUST-08590",
+        "company_name": "PT Haryanto Tbk",
+        "n_orders": 38
+      },
+      {
+        "customer_code": "CUST-06170",
+        "company_name": "UD Hakim",
+        "n_orders": 38
+      }
+    ]
+  },
+  "Q006": {
+    "status": "OK",
+    "n_rows": 3,
+    "sample": [
+      {
+        "license_type": "B1",
+        "n_drivers": 416
+      },
+      {
+        "license_type": "B2",
+        "n_drivers": 871
+      },
+      {
+        "license_type": "B2_UMUM",
+        "n_drivers": 713
+      }
+    ]
+  },
+  "Q007": {
+    "status": "OK",
+    "n_rows": 9,
+    "sample": [
+      {
+        "region_code": "SUMSEL",
+        "avg_delay_hours_late_only": "6.01",
+        "pct_late": "4.9"
+      },
+      {
+        "region_code": "DKI",
+        "avg_delay_hours_late_only": "2326.48",
+        "pct_late": "0.3"
+      },
+      {
+        "region_code": "JABAR",
+        "avg_delay_hours_late_only": null,
+        "pct_late": "0.0"
+      }
+    ]
+  },
+  "Q008": {
+    "status": "OK",
+    "n_rows": 9,
+    "sample": [
+      {
+        "region_code": "SUMSEL",
+        "ontime_pct_jul": "96.8",
+        "ontime_pct_aug": "95.1"
+      },
+      {
+        "region_code": "DKI",
+        "ontime_pct_jul": "100.0",
+        "ontime_pct_aug": "99.7"
+      },
+      {
+        "region_code": "JABAR",
+        "ontime_pct_jul": "100.0",
+        "ontime_pct_aug": "100.0"
+      }
+    ]
+  },
+  "Q009": {
+    "status": "OK",
+    "n_rows": 12,
+    "sample": [
+      {
+        "month": 1,
+        "n_orders": 14665
+      },
+      {
+        "month": 2,
+        "n_orders": 12468
+      },
+      {
+        "month": 3,
+        "n_orders": 22229
+      }
+    ]
+  },
+  "Q010": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "is_old_unit": false,
+        "kpl_before_may": "8.80",
+        "kpl_from_may": "9.17",
+        "pct_degradation": "-4.2"
+      },
+      {
+        "is_old_unit": true,
+        "kpl_before_may": "8.80",
+        "kpl_from_may": "7.94",
+        "pct_degradation": "9.8"
+      }
+    ]
+  },
+  "Q011": {
+    "status": "OK",
+    "n_rows": 9,
+    "sample": [
+      {
+        "region_code": "SUMUT",
+        "n_attempts": 16098,
+        "failure_rate_pct": "9.21"
+      },
+      {
+        "region_code": "BANTEN",
+        "n_attempts": 19936,
+        "failure_rate_pct": "7.89"
+      },
+      {
+        "region_code": "JABAR",
+        "n_attempts": 35865,
+        "failure_rate_pct": "7.65"
+      }
+    ]
+  },
+  "Q012": {
+    "status": "OK",
+    "n_rows": 12,
+    "sample": [
+      {
+        "origin_depot": "JTM-01",
+        "avg_actual_vs_planned_ratio": "1.225"
+      },
+      {
+        "origin_depot": "BTN-01",
+        "avg_actual_vs_planned_ratio": "1.035"
+      },
+      {
+        "origin_depot": "SMU-01",
+        "avg_actual_vs_planned_ratio": "1.035"
+      }
+    ]
+  },
+  "Q013": {
+    "status": "OK",
+    "n_rows": 12,
+    "sample": [
+      {
+        "month": 1,
+        "total_cost": "3826504203",
+        "n_records": 1545
+      },
+      {
+        "month": 2,
+        "total_cost": "3553081182",
+        "n_records": 1408
+      },
+      {
+        "month": 3,
+        "total_cost": "3920185776",
+        "n_records": 1584
+      }
+    ]
+  },
+  "Q014": {
+    "status": "OK",
+    "n_rows": 6,
+    "sample": [
+      {
+        "v_class": "tractor_head",
+        "avg_load_factor": "0.125"
+      },
+      {
+        "v_class": "wingbox",
+        "avg_load_factor": "0.402"
+      },
+      {
+        "v_class": "tronton",
+        "avg_load_factor": "0.411"
+      }
+    ]
+  },
+  "Q015": {
+    "status": "OK",
+    "n_rows": 7,
+    "sample": [
+      {
+        "day_name": "Sunday   ",
+        "dow": 0,
+        "failure_rate_pct": "7.13"
+      },
+      {
+        "day_name": "Monday   ",
+        "dow": 1,
+        "failure_rate_pct": "10.23"
+      },
+      {
+        "day_name": "Tuesday  ",
+        "dow": 2,
+        "failure_rate_pct": "7.76"
+      }
+    ]
+  },
+  "Q016": {
+    "status": "OK",
+    "n_rows": 10,
+    "sample": [
+      {
+        "vehicle_id": 948,
+        "plate_number": "J1947OZ",
+        "cost_per_km": "5914"
+      },
+      {
+        "vehicle_id": 746,
+        "plate_number": "J1745FD",
+        "cost_per_km": "5886"
+      },
+      {
+        "vehicle_id": 547,
+        "plate_number": "J1546AL",
+        "cost_per_km": "5828"
+      }
+    ]
+  },
+  "Q017": {
+    "status": "OK",
+    "n_rows": 5,
+    "sample": [
+      {
+        "failure_reason": "customer_closed",
+        "n": 5414,
+        "pct": "35.5"
+      },
+      {
+        "failure_reason": "address_not_found",
+        "n": 3879,
+        "pct": "25.4"
+      },
+      {
+        "failure_reason": "refused",
+        "n": 3600,
+        "pct": "23.6"
+      }
+    ]
+  },
+  "Q018": {
+    "status": "OK",
+    "n_rows": 10,
+    "sample": [
+      {
+        "segment": "retail",
+        "tier": "platinum",
+        "sla_breach_pct": "1.95"
+      },
+      {
+        "segment": "ecommerce",
+        "tier": "platinum",
+        "sla_breach_pct": "1.90"
+      },
+      {
+        "segment": "fmcg",
+        "tier": "platinum",
+        "sla_breach_pct": "1.63"
+      }
+    ]
+  },
+  "Q019": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "is_weekend": false,
+        "n": 12065,
+        "failure_rate_pct": "7.34",
+        "dominant_reason": "customer_closed"
+      },
+      {
+        "is_weekend": true,
+        "n": 4033,
+        "failure_rate_pct": "14.78",
+        "dominant_reason": "customer_closed"
+      }
+    ]
+  },
+  "Q020": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "is_overdue": false,
+        "avg_breakdown_events": "1.202"
+      },
+      {
+        "is_overdue": true,
+        "avg_breakdown_events": "26.937"
+      }
+    ]
+  },
+  "Q021": {
+    "status": "OK",
+    "n_rows": 41,
+    "sample": [
+      {
+        "driver_code": "DRV-0718",
+        "license_type": "B2",
+        "n_heavy_deliveries": 53,
+        "failure_rate_pct": "30.2"
+      },
+      {
+        "driver_code": "DRV-1261",
+        "license_type": "B2",
+        "n_heavy_deliveries": 44,
+        "failure_rate_pct": "25.0"
+      },
+      {
+        "driver_code": "DRV-1701",
+        "license_type": "B2",
+        "n_heavy_deliveries": 44,
+        "failure_rate_pct": "27.3"
+      }
+    ]
+  },
+  "Q022": {
+    "status": "OK",
+    "n_rows": 30,
+    "sample": [
+      {
+        "fuel_id": 28900,
+        "plate_number": "J1286VO",
+        "liters": "274.57",
+        "tank_capacity_liter": 200,
+        "transacted_at": "2025-01-14 20:50:48.673621+00:00"
+      },
+      {
+        "fuel_id": 28899,
+        "plate_number": "J1286VO",
+        "liters": "274.23",
+        "tank_capacity_liter": 200,
+        "transacted_at": "2025-01-11 07:44:30.422035+00:00"
+      },
+      {
+        "fuel_id": 28896,
+        "plate_number": "J1286VO",
+        "liters": "265.32",
+        "tank_capacity_liter": 200,
+        "transacted_at": "2025-01-02 05:58:46.396823+00:00"
+      }
+    ]
+  },
+  "Q023": {
+    "status": "OK",
+    "n_rows": 116,
+    "sample": [
+      {
+        "vehicle_id": 197,
+        "fuel_id": 19909,
+        "transacted_at": "2025-02-10 07:43:59.628678+00:00",
+        "prev_odo": 11588,
+        "odometer_km": 5889
+      },
+      {
+        "vehicle_id": 197,
+        "fuel_id": 19911,
+        "transacted_at": "2025-02-14 10:41:22.594552+00:00",
+        "prev_odo": 13681,
+        "odometer_km": 9533
+      },
+      {
+        "vehicle_id": 197,
+        "fuel_id": 19912,
+        "transacted_at": "2025-02-19 05:45:04.409218+00:00",
+        "prev_odo": 9533,
+        "odometer_km": 6268
+      }
+    ]
+  },
+  "Q024": {
+    "status": "OK",
+    "n_rows": 10,
+    "sample": [
+      {
+        "location_code": "WS-07",
+        "n_corrective": 683,
+        "repeat_repair_pct": "32.2"
+      },
+      {
+        "location_code": "WS-000029",
+        "n_corrective": 332,
+        "repeat_repair_pct": "3.9"
+      },
+      {
+        "location_code": "WS-000027",
+        "n_corrective": 357,
+        "repeat_repair_pct": "3.9"
+      }
+    ]
+  },
+  "Q025": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "after_june": false,
+        "breach_pct": "0.6",
+        "avg_transit_hours": "3.84"
+      },
+      {
+        "after_june": true,
+        "breach_pct": "2.2",
+        "avg_transit_hours": "4.13"
+      }
+    ]
+  },
+  "Q026": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "is_aggressive_driving": false,
+        "avg_maintenance_cost": "44448740"
+      },
+      {
+        "is_aggressive_driving": true,
+        "avg_maintenance_cost": "57906413"
+      }
+    ]
+  },
+  "Q027": {
+    "status": "OK",
+    "n_rows": 10,
+    "sample": [
+      {
+        "customer_code": "CUST-04417",
+        "company_name": "CV Safitri",
+        "n_address_not_found": 25
+      },
+      {
+        "customer_code": "CUST-08518",
+        "company_name": "UD Mansur Tbk",
+        "n_address_not_found": 4
+      },
+      {
+        "customer_code": "CUST-04124",
+        "company_name": "PD Kuswandari Narpati",
+        "n_address_not_found": 4
+      }
+    ]
+  },
+  "Q028": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "is_day_after_overwork": false,
+        "incident_rate_pct": "25.2"
+      },
+      {
+        "is_day_after_overwork": true,
+        "incident_rate_pct": "54.7"
+      }
+    ]
+  },
+  "Q029": {
+    "status": "OK",
+    "n_rows": 8,
+    "sample": [
+      {
+        "region_code": "JABAR",
+        "compliance_before_may": "92.4",
+        "compliance_from_may": "56.4"
+      },
+      {
+        "region_code": "SULSEL",
+        "compliance_before_may": "88.9",
+        "compliance_from_may": "87.2"
+      },
+      {
+        "region_code": "SUMUT",
+        "compliance_before_may": "90.3",
+        "compliance_from_may": "89.2"
+      }
+    ]
+  },
+  "Q030": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "month": 8,
+        "avg_distance_km": "76.3"
+      },
+      {
+        "month": 9,
+        "avg_distance_km": "70.1"
+      }
+    ]
+  },
+  "Q031": {
+    "status": "OK",
+    "n_rows": 1,
+    "sample": [
+      {
+        "op_cost_jul": "979304310",
+        "op_cost_aug": "1276901882",
+        "fuel_jul": "299981107",
+        "fuel_aug": "338685475",
+        "overtime_jul": "691367",
+        "overtime_aug": "18382848",
+        "maintenance_jul": "403588207",
+        "maintenance_aug": "647917258",
+        "volume_jul": 3910,
+        "volume_aug": 3909
+      }
+    ]
+  },
+  "Q032": {
+    "status": "OK",
+    "n_rows": 1,
+    "sample": [
+      {
+        "avg_price_h1": "14556",
+        "avg_price_h2": "16536",
+        "gx350_kpl_h1": "8.56",
+        "gx350_kpl_h2": "8.44"
+      }
+    ]
+  },
+  "Q033": {
+    "status": "OK",
+    "n_rows": 12,
+    "sample": [
+      {
+        "month": 1,
+        "preventive_compliance_pct_jabar": "94.8",
+        "fleetwide_breakdown_events": 314
+      },
+      {
+        "month": 2,
+        "preventive_compliance_pct_jabar": "93.9",
+        "fleetwide_breakdown_events": 283
+      },
+      {
+        "month": 3,
+        "preventive_compliance_pct_jabar": "87.9",
+        "fleetwide_breakdown_events": 412
+      }
+    ]
+  },
+  "Q034": {
+    "status": "OK",
+    "n_rows": 4,
+    "sample": [
+      {
+        "is_corridor": false,
+        "month": 7,
+        "avg_transit_h": "3.85",
+        "n": 12107
+      },
+      {
+        "is_corridor": false,
+        "month": 8,
+        "avg_transit_h": "3.97",
+        "n": 11665
+      },
+      {
+        "is_corridor": true,
+        "month": 7,
+        "avg_transit_h": "3.20",
+        "n": 2477
+      }
+    ]
+  },
+  "Q035": {
+    "status": "OK",
+    "n_rows": 100,
+    "sample": [
+      {
+        "vehicle_id": 540,
+        "plate_number": "J1539UP",
+        "is_overdue": true,
+        "age_years": "0",
+        "n_harsh_braking": 43,
+        "n_breakdown": 44,
+        "risk_score": 47
+      },
+      {
+        "vehicle_id": 913,
+        "plate_number": "S1912GZ",
+        "is_overdue": true,
+        "age_years": "5",
+        "n_harsh_braking": 28,
+        "n_breakdown": 42,
+        "risk_score": 45
+      },
+      {
+        "vehicle_id": 216,
+        "plate_number": "J1215XM",
+        "is_overdue": true,
+        "age_years": "5",
+        "n_harsh_braking": 3903,
+        "n_breakdown": 39,
+        "risk_score": 44
+      }
+    ]
+  },
+  "Q036": {
+    "status": "OK",
+    "n_rows": 3,
+    "sample": [
+      {
+        "risk": "A03: kendaraan overdue service -> breakdown 20x lipat",
+        "n_vehicles_affected": 111
+      },
+      {
+        "risk": "A11: workshop WS-07 repeat repair 32% vs baseline 3%",
+        "n_vehicles_affected": 1444
+      },
+      {
+        "risk": "A26: kendaraan umur >7 tahun, cost/km 2.1x lipat",
+        "n_vehicles_affected": 55
+      }
+    ]
+  },
+  "Q037": {
+    "status": "OK",
+    "n_rows": 2,
+    "sample": [
+      {
+        "region_code": "DKI",
+        "avg_fuel_cost_per_km": "1981.8",
+        "avg_fuel_price_per_liter": "15421.587030716724"
+      },
+      {
+        "region_code": "SULSEL",
+        "avg_fuel_cost_per_km": "2071.9",
+        "avg_fuel_price_per_liter": "16351.879023605150"
+      }
+    ]
+  },
+  "Q038": {
+    "status": "OK",
+    "n_rows": 1,
+    "sample": [
+      {
+        "avg_naive_including_bad_rows": "3.704",
+        "avg_correct_excluding_bad_rows": "3.862",
+        "n_bad_rows": 5943,
+        "pct_bad_rows": "3.22"
+      }
+    ]
+  },
+  "Q039": {
+    "status": "OK",
+    "evidence": "weather-related columns found: 0 (expected 0)"
+  },
+  "Q040": {
+    "status": "OK",
+    "evidence": "revenue-related tables found: 0 (expected 0)"
+  }
+}

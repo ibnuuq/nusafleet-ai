@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python -m venv .venv 2>&1)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pip install -e \".[dev]\" 2>&1)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -c \"import src, src.models.schemas, src.models.llm; print\\('import OK'\\)\")",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m src.api.main)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -m pytest -v 2>&1)",
+      "Bash(stat -c '%y %n' data/generator/config.py schema.sql docs/internal/README_ISOLATION.md eval/reference/Q001.sql verification/run_gate_0d.py .env 2>&1)",
+      "Read(//c/Project/nusafleet-ai/**)",
+      "WebFetch(domain:openrouter.ai)",
+      "PowerShell(.\\\\.venv\\\\Scripts\\\\python.exe -c \"import src.models.llm; print\\('import OK, no google-genai residue'\\); print\\([n for n in dir\\(src.models.llm\\) if not n.startswith\\('_'\\)]\\)\")"
+    ]
+  }
+}

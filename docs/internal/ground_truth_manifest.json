@@ -1,0 +1,788 @@
+{
+  "_meta": {
+    "purpose": "Ground-truth manifest internal untuk NusaFleet AI dataset. JANGAN dimasukkan ke context/tool apapun yang bisa diakses agent runtime (SQL Agent, Analytics Agent, dst) -- ini kunci jawaban.",
+    "isolation_note": "Disimpan di docs/internal/, terpisah dari src/ dan data/seeds/. Saat build agent (M1+), pastikan folder ini TIDAK ter-mount ke sandbox/tool agent mana pun.",
+    "random_seed": 20250101,
+    "gate_0d_status": "PASS",
+    "gate_0d_pass_count": 26,
+    "gate_0d_total": 26
+  },
+  "anomalies": [
+    {
+      "anomaly_id": "A01",
+      "description": "Unit GX-350 (acquisition<2023) terdegradasi efisiensi sejak Mei 2025",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A01.sql",
+      "verification_sql": "-- A01: unit GX-350 (acquisition < 2023-01-01) degradasi efisiensi mulai Mei 2025\n-- target: km/l turun ~16.7% (8.4 -> ~7.0) pada H2 dibanding sebelum Mei\nWITH consumption AS (\n  SELECT ft.vehicle_id, EXTRACT(MONTH FROM ft.transacted_at)::int AS month,\n         ft.liters, LAG(ft.odometer_km) OVER (PARTITION BY ft.vehicle_id ORDER BY ft.transacted_at) AS prev_odo,\n         ft.odometer_km\n  FROM fleet.fuel_transactions ft\n  JOIN fleet.vehicles v ON v.vehicle_id = ft.vehicle_id\n  JOIN fleet.vehicle_models vm ON vm.model_id = v.model_id\n  WHERE vm.model_code = 'GX-350' AND v.acquisition_date < '2023-01-01'\n),\nkpl AS (\n  SELECT month, (odometer_km - prev_odo)::numeric / NULLIF(liters,0) AS km_per_liter\n  FROM consumption WHERE prev_odo IS NOT NULL AND odometer_km > prev_odo\n)\nSELECT\n  ROUND(AVG(km_per_liter) FILTER (WHERE month < 5), 2) AS kpl_before_may,\n  ROUND(AVG(km_per_liter) FILTER (WHERE month >= 5), 2) AS kpl_from_may,\n  ROUND((1 - AVG(km_per_liter) FILTER (WHERE month >= 5) / NULLIF(AVG(km_per_liter) FILTER (WHERE month < 5),0)) * 100, 1) AS pct_drop,\n  CASE WHEN AVG(km_per_liter) FILTER (WHERE month >= 5) < AVG(km_per_liter) FILTER (WHERE month < 5) * 0.92\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM kpl;\n",
+      "expected_signal": {
+        "kpl_before_may": "8.80",
+        "kpl_from_may": "7.94",
+        "pct_drop": "9.8",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "kpl_before_may": "8.80",
+          "kpl_from_may": "7.94",
+          "pct_drop": "9.8",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A02",
+      "description": "Koridor Cakung<->Tanjung Priok macet mulai Agustus (delay aditif)",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A02.sql",
+      "verification_sql": "-- A02: koridor Cakung/Tanjung Priok macet mulai Agustus (delay aditif -> naik transit_hours)\nWITH d AS (\n  SELECT dl.delivery_id, dl.dispatched_at, dl.delivered_at,\n         EXTRACT(EPOCH FROM (dl.delivered_at - dl.dispatched_at))/3600.0 AS transit_h,\n         lo.location_code AS origin_code\n  FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.locations lo ON lo.location_id = o.origin_location_id\n  WHERE dl.status = 'delivered' AND dl.delivered_at > dl.dispatched_at\n    AND lo.location_code IN ('JKT-01','JKT-02')\n)\nSELECT\n  ROUND(AVG(transit_h) FILTER (WHERE EXTRACT(MONTH FROM dispatched_at) = 7), 2) AS avg_transit_jul,\n  ROUND(AVG(transit_h) FILTER (WHERE EXTRACT(MONTH FROM dispatched_at) = 8), 2) AS avg_transit_aug,\n  ROUND((AVG(transit_h) FILTER (WHERE EXTRACT(MONTH FROM dispatched_at) = 8) /\n         NULLIF(AVG(transit_h) FILTER (WHERE EXTRACT(MONTH FROM dispatched_at) = 7),0) - 1) * 100, 1) AS pct_increase,\n  CASE WHEN AVG(transit_h) FILTER (WHERE EXTRACT(MONTH FROM dispatched_at) = 8) >\n            AVG(transit_h) FILTER (WHERE EXTRACT(MONTH FROM dispatched_at) = 7) * 1.15\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM d;\n",
+      "expected_signal": {
+        "avg_transit_jul": "3.20",
+        "avg_transit_aug": "4.29",
+        "pct_increase": "34.2",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "avg_transit_jul": "3.20",
+          "avg_transit_aug": "4.29",
+          "pct_increase": "34.2",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A03",
+      "description": "Kendaraan overdue service -> breakdown rate jauh lebih tinggi",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A03.sql",
+      "verification_sql": "-- A03: kendaraan overdue service (odometer - last_service > interval*1.25) -> breakdown rate lebih tinggi\nWITH veh_status AS (\n  SELECT vehicle_id,\n         (odometer_km - last_service_odometer_km) > (service_interval_km * 1.25) AS is_overdue\n  FROM fleet.vehicles\n),\nbreakdown_count AS (\n  SELECT ve.vehicle_id, COUNT(*) FILTER (WHERE ve.ev_type = 'breakdown') AS n_breakdown, COUNT(*) AS n_events\n  FROM fleet.vehicle_events ve GROUP BY ve.vehicle_id\n)\nSELECT\n  ROUND(AVG(bc.n_breakdown) FILTER (WHERE vs.is_overdue), 3) AS avg_breakdown_overdue,\n  ROUND(AVG(bc.n_breakdown) FILTER (WHERE NOT vs.is_overdue), 3) AS avg_breakdown_normal,\n  ROUND(AVG(bc.n_breakdown) FILTER (WHERE vs.is_overdue) / NULLIF(AVG(bc.n_breakdown) FILTER (WHERE NOT vs.is_overdue),0), 2) AS ratio,\n  CASE WHEN AVG(bc.n_breakdown) FILTER (WHERE vs.is_overdue) >\n            AVG(bc.n_breakdown) FILTER (WHERE NOT vs.is_overdue) * 2.0\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM veh_status vs LEFT JOIN breakdown_count bc ON bc.vehicle_id = vs.vehicle_id;\n",
+      "expected_signal": {
+        "avg_breakdown_overdue": "26.937",
+        "avg_breakdown_normal": "1.202",
+        "ratio": "22.40",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "avg_breakdown_overdue": "26.937",
+          "avg_breakdown_normal": "1.202",
+          "ratio": "22.40",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A04",
+      "description": "41 driver lisensi B2 ditugaskan ke tronton/tractor_head -> failure & harsh_braking naik",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A04.sql",
+      "verification_sql": "-- A04: driver B2 (bukan B2_UMUM) yang dipakai berulang di kendaraan tronton/tractor_head\n-- -> failure rate & harsh_braking rate lebih tinggi\nWITH heavy AS (\n  SELECT dl.delivery_id, dl.driver_id, dl.status, dl.vehicle_id, dr.license_type\n  FROM fleet.deliveries dl\n  JOIN fleet.vehicles v ON v.vehicle_id = dl.vehicle_id\n  JOIN fleet.vehicle_models vm ON vm.model_id = v.model_id\n  JOIN fleet.drivers dr ON dr.driver_id = dl.driver_id\n  WHERE vm.v_class IN ('tronton','tractor_head')\n),\nmismatch_drivers AS (\n  -- driver B2 (bukan B2_UMUM) dengan >=15 delivery kendaraan berat -> pola mismatch sistematis\n  SELECT driver_id FROM heavy WHERE license_type = 'B2'\n  GROUP BY driver_id HAVING COUNT(*) >= 15\n),\ntagged AS (\n  SELECT h.*, (h.driver_id IN (SELECT driver_id FROM mismatch_drivers)) AS is_mismatch\n  FROM heavy h\n),\nhb AS (\n  SELECT delivery_id, COUNT(*) AS n_hb FROM fleet.vehicle_events\n  WHERE ev_type = 'harsh_braking' AND delivery_id IS NOT NULL GROUP BY delivery_id\n)\nSELECT\n  COUNT(DISTINCT driver_id) FILTER (WHERE is_mismatch) AS n_mismatch_drivers,\n  ROUND(AVG((status IN ('failed','returned'))::int) FILTER (WHERE is_mismatch), 4) AS fail_rate_mismatch,\n  ROUND(AVG((status IN ('failed','returned'))::int) FILTER (WHERE NOT is_mismatch), 4) AS fail_rate_baseline,\n  ROUND(AVG((status IN ('failed','returned'))::int) FILTER (WHERE is_mismatch) /\n        NULLIF(AVG((status IN ('failed','returned'))::int) FILTER (WHERE NOT is_mismatch),0), 2) AS fail_ratio,\n  ROUND(AVG(COALESCE(hb.n_hb,0)::numeric) FILTER (WHERE is_mismatch), 4) AS hb_rate_mismatch,\n  ROUND(AVG(COALESCE(hb.n_hb,0)::numeric) FILTER (WHERE NOT is_mismatch), 4) AS hb_rate_baseline,\n  CASE WHEN\n    AVG((status IN ('failed','returned'))::int) FILTER (WHERE is_mismatch) >\n    AVG((status IN ('failed','returned'))::int) FILTER (WHERE NOT is_mismatch) * 2.0\n    AND COUNT(DISTINCT driver_id) FILTER (WHERE is_mismatch) BETWEEN 20 AND 60\n  THEN 'PASS' ELSE 'FAIL' END AS status\nFROM tagged t LEFT JOIN hb ON hb.delivery_id = t.delivery_id;\n",
+      "expected_signal": {
+        "n_mismatch_drivers": 41,
+        "fail_rate_mismatch": "0.2474",
+        "fail_rate_baseline": "0.0774",
+        "fail_ratio": "3.19",
+        "hb_rate_mismatch": "0.3240",
+        "hb_rate_baseline": "0.1438",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_mismatch_drivers": 41,
+          "fail_rate_mismatch": "0.2474",
+          "fail_rate_baseline": "0.0774",
+          "fail_ratio": "3.19",
+          "hb_rate_mismatch": "0.3240",
+          "hb_rate_baseline": "0.1438",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A04",
+        "n_mismatch_drivers": 41,
+        "n_reassigned_deliveries": 1435,
+        "baseline_fail_rate": 0.0774,
+        "actual_fail_rate": 0.2474,
+        "fail_ratio": 3.19,
+        "baseline_hb_rate": 0.1323,
+        "actual_hb_rate": 0.3171,
+        "hb_ratio": 2.4,
+        "mismatch_driver_ids": [
+          456,
+          343,
+          1402,
+          208,
+          1026,
+          1894,
+          1673,
+          580,
+          1756,
+          1796,
+          1701,
+          805,
+          1603,
+          203,
+          684,
+          1261,
+          1018,
+          544,
+          292,
+          714,
+          1466,
+          1989,
+          994,
+          772,
+          1881,
+          847,
+          302,
+          755,
+          155,
+          220,
+          718,
+          1360,
+          403,
+          731,
+          1395,
+          1548,
+          404,
+          212,
+          1666,
+          1832,
+          920
+        ]
+      }
+    },
+    {
+      "anomaly_id": "A05",
+      "description": "DEFINITION OF DONE: DKI operational cost naik Agustus, 3 penyebab, volume red herring negatif",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A05.sql",
+      "verification_sql": "-- A05: skenario Definition of Done -- DKI operational cost naik Agustus, 3 penyebab, volume TURUN (red herring)\nWITH dki_deliv AS (\n  SELECT dl.*, EXTRACT(MONTH FROM dl.dispatched_at)::int AS month\n  FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.locations ld ON ld.location_id = o.destination_location_id\n  JOIN fleet.regions r ON r.region_id = ld.region_id\n  WHERE r.region_code = 'DKI'\n),\ndki_mtc AS (\n  SELECT m.*, EXTRACT(MONTH FROM m.scheduled_date)::int AS month\n  FROM fleet.maintenance m\n  JOIN fleet.locations w ON w.location_id = m.workshop_location_id\n  JOIN fleet.regions r ON r.region_id = w.region_id\n  WHERE r.region_code = 'DKI' AND m.mtc_type = 'corrective'\n),\nagg AS (\n  SELECT\n    SUM(delivery_cost_idr) FILTER (WHERE month=7) AS delivery_jul,\n    SUM(delivery_cost_idr) FILTER (WHERE month=8) AS delivery_aug,\n    SUM(fuel_cost_idr) FILTER (WHERE month=7) AS fuel_jul, SUM(fuel_cost_idr) FILTER (WHERE month=8) AS fuel_aug,\n    SUM(overtime_cost_idr) FILTER (WHERE month=7) AS ot_jul, SUM(overtime_cost_idr) FILTER (WHERE month=8) AS ot_aug,\n    COUNT(*) FILTER (WHERE month=7) AS vol_jul, COUNT(*) FILTER (WHERE month=8) AS vol_aug\n  FROM dki_deliv\n),\nmagg AS (\n  SELECT SUM(cost_idr) FILTER (WHERE month=7) AS mtc_jul, SUM(cost_idr) FILTER (WHERE month=8) AS mtc_aug\n  FROM dki_mtc\n)\nSELECT\n  (agg.delivery_jul + magg.mtc_jul) AS op_cost_jul,\n  (agg.delivery_aug + magg.mtc_aug) AS op_cost_aug,\n  ROUND((((agg.delivery_aug+magg.mtc_aug)::numeric/(agg.delivery_jul+magg.mtc_jul)) - 1)*100,1) AS mom_pct,\n  ROUND(((agg.fuel_aug::numeric/agg.fuel_jul)-1)*100,1) AS fuel_pct_change,\n  ROUND(((agg.ot_aug::numeric/NULLIF(agg.ot_jul,0))-1)*100,1) AS overtime_pct_change,\n  ROUND(((magg.mtc_aug::numeric/magg.mtc_jul)-1)*100,1) AS maintenance_pct_change,\n  ROUND(((agg.vol_aug::numeric/agg.vol_jul)-1)*100,1) AS volume_pct_change,\n  CASE WHEN (agg.delivery_aug+magg.mtc_aug) > (agg.delivery_jul+magg.mtc_jul)   -- operational cost naik\n        AND agg.fuel_aug > agg.fuel_jul                                          -- fuel naik (penyebab 1 valid)\n        AND magg.mtc_aug > magg.mtc_jul                                          -- maintenance naik (penyebab 2 valid)\n        AND agg.ot_aug > agg.ot_jul                                              -- overtime naik (penyebab 3 valid)\n        AND agg.vol_aug < agg.vol_jul                                            -- volume TURUN (red herring negatif)\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM agg, magg;\n",
+      "expected_signal": {
+        "op_cost_jul": "979304310",
+        "op_cost_aug": "1276901882",
+        "mom_pct": "30.4",
+        "fuel_pct_change": "12.9",
+        "overtime_pct_change": "2558.9",
+        "maintenance_pct_change": "60.5",
+        "volume_pct_change": "0.0",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "op_cost_jul": "979304310",
+          "op_cost_aug": "1276901882",
+          "mom_pct": "30.4",
+          "fuel_pct_change": "12.9",
+          "overtime_pct_change": "2558.9",
+          "maintenance_pct_change": "60.5",
+          "volume_pct_change": "0.0",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A06",
+      "description": "Fuel card fraud pada 18 kendaraan (liters > kapasitas tank)",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A06.sql",
+      "verification_sql": "-- A06: fuel card fraud -- liters melebihi kapasitas tank, atau transaksi ganda cepat di stasiun berjauhan\nWITH over_capacity AS (\n  SELECT ft.fuel_id, ft.vehicle_id FROM fleet.fuel_transactions ft\n  JOIN fleet.vehicles v ON v.vehicle_id = ft.vehicle_id\n  WHERE ft.liters > v.tank_capacity_liter\n),\nrapid_refuel AS (\n  SELECT ft.fuel_id, ft.vehicle_id,\n         LAG(ft.transacted_at) OVER (PARTITION BY ft.vehicle_id ORDER BY ft.transacted_at) AS prev_time,\n         LAG(ft.station_location_id) OVER (PARTITION BY ft.vehicle_id ORDER BY ft.transacted_at) AS prev_station\n  FROM fleet.fuel_transactions ft\n)\nSELECT\n  (SELECT COUNT(*) FROM over_capacity) AS n_over_capacity_tx,\n  (SELECT COUNT(DISTINCT vehicle_id) FROM over_capacity) AS n_vehicles_over_capacity,\n  CASE WHEN (SELECT COUNT(*) FROM over_capacity) > 100\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM over_capacity LIMIT 1;\n",
+      "expected_signal": {
+        "n_over_capacity_tx": 214,
+        "n_vehicles_over_capacity": 3,
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_over_capacity_tx": 214,
+          "n_vehicles_over_capacity": 3,
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A07",
+      "description": "Odometer rollback pada 7 kendaraan",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A07.sql",
+      "verification_sql": "-- A07: odometer rollback (LAG window function) -- odometer turun dibanding transaksi sebelumnya\nWITH seq AS (\n  SELECT vehicle_id, fuel_id, transacted_at, odometer_km,\n         LAG(odometer_km) OVER (PARTITION BY vehicle_id ORDER BY transacted_at) AS prev_odo\n  FROM fleet.fuel_transactions\n)\nSELECT\n  COUNT(*) AS n_rollback_events,\n  COUNT(DISTINCT vehicle_id) AS n_vehicles_affected,\n  CASE WHEN COUNT(*) > 10 THEN 'PASS' ELSE 'FAIL' END AS status\nFROM seq WHERE prev_odo IS NOT NULL AND odometer_km < prev_odo;\n",
+      "expected_signal": {
+        "n_rollback_events": 116,
+        "n_vehicles_affected": 7,
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_rollback_events": 116,
+          "n_vehicles_affected": 7,
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A08",
+      "description": "Depot JTM-01 under-estimate planned_distance sistematis",
+      "tier": 1,
+      "verification_sql_path": "verification/anomalies/A08.sql",
+      "verification_sql": "-- A08: Depot JTM-01 (Surabaya) under-estimate jarak sistematis (actual/planned lebih tinggi dari fleet)\nWITH d AS (\n  SELECT dl.delivery_id, dl.actual_distance_km, dl.planned_distance_km, lo.location_code AS origin_code\n  FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.locations lo ON lo.location_id = o.origin_location_id\n  WHERE dl.actual_distance_km IS NOT NULL AND dl.planned_distance_km > 0\n)\nSELECT\n  ROUND(AVG(actual_distance_km/planned_distance_km) FILTER (WHERE origin_code='JTM-01'), 3) AS ratio_jtm01,\n  ROUND(AVG(actual_distance_km/planned_distance_km) FILTER (WHERE origin_code<>'JTM-01'), 3) AS ratio_fleet,\n  CASE WHEN AVG(actual_distance_km/planned_distance_km) FILTER (WHERE origin_code='JTM-01') >\n            AVG(actual_distance_km/planned_distance_km) FILTER (WHERE origin_code<>'JTM-01') * 1.1\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM d;\n",
+      "expected_signal": {
+        "ratio_jtm01": "1.225",
+        "ratio_fleet": "1.029",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "ratio_jtm01": "1.225",
+          "ratio_fleet": "1.029",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A09",
+      "description": "Delivery akhir pekan SUMUT -> failure rate lebih tinggi (customer_closed)",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A09.sql",
+      "verification_sql": "-- A09: delivery akhir pekan di SUMUT -> failure rate lebih tinggi (dominan customer_closed)\nWITH d AS (\n  SELECT dl.status, dl.failure_reason, EXTRACT(DOW FROM dl.dispatched_at) IN (0,6) AS is_weekend\n  FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.locations ld ON ld.location_id = o.destination_location_id\n  JOIN fleet.regions r ON r.region_id = ld.region_id\n  WHERE r.region_code = 'SUMUT'\n)\nSELECT\n  ROUND(AVG((status IN ('failed','returned'))::int) FILTER (WHERE is_weekend), 4) AS fail_rate_weekend,\n  ROUND(AVG((status IN ('failed','returned'))::int) FILTER (WHERE NOT is_weekend), 4) AS fail_rate_weekday,\n  ROUND(AVG((status IN ('failed','returned'))::int) FILTER (WHERE is_weekend) /\n        NULLIF(AVG((status IN ('failed','returned'))::int) FILTER (WHERE NOT is_weekend),0), 2) AS ratio,\n  MODE() WITHIN GROUP (ORDER BY failure_reason) FILTER (WHERE is_weekend AND status IN ('failed','returned')) AS dominant_reason,\n  CASE WHEN AVG((status IN ('failed','returned'))::int) FILTER (WHERE is_weekend) >\n            AVG((status IN ('failed','returned'))::int) FILTER (WHERE NOT is_weekend) * 1.5\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM d;\n",
+      "expected_signal": {
+        "fail_rate_weekend": "0.1478",
+        "fail_rate_weekday": "0.0734",
+        "ratio": "2.01",
+        "dominant_reason": "customer_closed",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "fail_rate_weekend": "0.1478",
+          "fail_rate_weekday": "0.0734",
+          "ratio": "2.01",
+          "dominant_reason": "customer_closed",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A10",
+      "description": "SLA platinum-FMCG diperketat 36->24 jam sejak 1 Juni 2025",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A10.sql",
+      "verification_sql": "-- A10: SLA platinum-FMCG diperketat 36->24 jam sejak 2025-06-01 -> breach rate naik meski transit stabil\nWITH target AS (\n  SELECT o.order_id, o.customer_id, o.promised_delivery_at, dl.delivered_at, dl.status,\n         EXTRACT(MONTH FROM o.order_date)::int >= 6 AS after_june\n  FROM fleet.orders o\n  JOIN fleet.customers c ON c.customer_id = o.customer_id\n  JOIN fleet.deliveries dl ON dl.order_id = o.order_id AND dl.status = 'delivered'\n  WHERE c.tier = 'platinum' AND c.segment = 'fmcg'\n)\nSELECT\n  ROUND(AVG((delivered_at > promised_delivery_at)::int) FILTER (WHERE NOT after_june), 4) AS breach_rate_before,\n  ROUND(AVG((delivered_at > promised_delivery_at)::int) FILTER (WHERE after_june), 4) AS breach_rate_after,\n  CASE WHEN AVG((delivered_at > promised_delivery_at)::int) FILTER (WHERE after_june) >\n            AVG((delivered_at > promised_delivery_at)::int) FILTER (WHERE NOT after_june) * 1.5\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM target;\n",
+      "expected_signal": {
+        "breach_rate_before": "0.0059",
+        "breach_rate_after": "0.0219",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "breach_rate_before": "0.0059",
+          "breach_rate_after": "0.0219",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A11",
+      "description": "Workshop WS-07: repeat corrective repair kendaraan sama dalam <=14 hari",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A11.sql",
+      "verification_sql": "-- A11: workshop WS-07 -- repeat CORRECTIVE repair kendaraan sama DI WORKSHOP YANG SAMA\n-- dalam <=14 hari, dibanding baseline workshop lain (definisi dipersempit\n-- supaya bukan sekadar \"kepadatan maintenance tahunan\" yang membuat baseline\n-- ikut tinggi -- ketahuan saat verifikasi pertama, repeat_rate_baseline 79%!)\nWITH mtc AS (\n  SELECT m.maintenance_id, m.vehicle_id, m.workshop_location_id, m.scheduled_date, l.location_code\n  FROM fleet.maintenance m JOIN fleet.locations l ON l.location_id = m.workshop_location_id\n  WHERE m.mtc_type = 'corrective'\n),\nrepeat_flag AS (\n  SELECT a.maintenance_id, a.location_code,\n         EXISTS (\n           SELECT 1 FROM mtc b\n           WHERE b.vehicle_id = a.vehicle_id AND b.workshop_location_id = a.workshop_location_id\n             AND b.maintenance_id <> a.maintenance_id\n             AND ABS(b.scheduled_date - a.scheduled_date) <= 14\n         ) AS is_repeat\n  FROM mtc a\n)\nSELECT\n  ROUND(AVG(is_repeat::int) FILTER (WHERE location_code = 'WS-07'), 4) AS repeat_rate_ws07,\n  ROUND(AVG(is_repeat::int) FILTER (WHERE location_code <> 'WS-07'), 4) AS repeat_rate_baseline,\n  CASE WHEN AVG(is_repeat::int) FILTER (WHERE location_code = 'WS-07') >\n            AVG(is_repeat::int) FILTER (WHERE location_code <> 'WS-07') * 1.8\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM repeat_flag;\n",
+      "expected_signal": {
+        "repeat_rate_ws07": "0.3221",
+        "repeat_rate_baseline": "0.0288",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "repeat_rate_ws07": "0.3221",
+          "repeat_rate_baseline": "0.0288",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A11",
+        "workshop_location_id": 19,
+        "workshop_code": "WS-07",
+        "n_repeat_rows_injected": 325
+      }
+    },
+    {
+      "anomaly_id": "A12",
+      "description": "Musim hujan (Des-Feb) koridor Semarang<->Surabaya -> accident event naik",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A12.sql",
+      "verification_sql": "-- A12: musim hujan (Des-Feb) koridor Semarang<->Surabaya -> accident event rate lebih tinggi\nWITH d AS (\n  SELECT dl.delivery_id, dl.dispatched_at, lo.location_code AS origin_code, r.region_code AS dest_region\n  FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.locations lo ON lo.location_id = o.origin_location_id\n  JOIN fleet.locations ld ON ld.location_id = o.destination_location_id\n  JOIN fleet.regions r ON r.region_id = ld.region_id\n  WHERE lo.location_code IN ('JTG-01','JTM-01') AND r.region_code IN ('JATENG','JATIM')\n),\ntagged AS (\n  SELECT d.*, EXTRACT(MONTH FROM dispatched_at) IN (12,1,2) AS is_rainy FROM d\n),\nacc AS (\n  SELECT delivery_id FROM fleet.vehicle_events WHERE ev_type = 'accident' AND delivery_id IS NOT NULL\n)\nSELECT\n  ROUND(AVG((t.delivery_id IN (SELECT delivery_id FROM acc))::int) FILTER (WHERE is_rainy), 5) AS accident_rate_rainy,\n  ROUND(AVG((t.delivery_id IN (SELECT delivery_id FROM acc))::int) FILTER (WHERE NOT is_rainy), 5) AS accident_rate_dry,\n  ROUND(AVG((t.delivery_id IN (SELECT delivery_id FROM acc))::int) FILTER (WHERE is_rainy) /\n        NULLIF(AVG((t.delivery_id IN (SELECT delivery_id FROM acc))::int) FILTER (WHERE NOT is_rainy),0), 2) AS ratio,\n  CASE WHEN AVG((t.delivery_id IN (SELECT delivery_id FROM acc))::int) FILTER (WHERE is_rainy) >\n            AVG((t.delivery_id IN (SELECT delivery_id FROM acc))::int) FILTER (WHERE NOT is_rainy) * 2.0\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM tagged t;\n",
+      "expected_signal": {
+        "accident_rate_rainy": "0.00899",
+        "accident_rate_dry": "0.00322",
+        "ratio": "2.79",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "accident_rate_rainy": "0.00899",
+          "accident_rate_dry": "0.00322",
+          "ratio": "2.79",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A12",
+        "n_corridor_rainy_deliveries": 9006,
+        "baseline_accident_rate": 0.00322,
+        "actual_accident_rate": 0.00899,
+        "ratio": 2.79
+      }
+    },
+    {
+      "anomaly_id": "A13",
+      "description": "3 rest area menyerap idle_excess panjang -> +47 menit rata2 delivery",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A13.sql",
+      "verification_sql": "-- A13: 3 rest area menyerap idle_excess panjang -> delivery yang melewatinya lebih lama\n-- deteksi generik: rest area mana saja yang paling sering direferensikan di metadata idle_excess\nWITH idle_ra AS (\n  SELECT delivery_id, (metadata->>'rest_area_location_id')::bigint AS ra_id,\n         (metadata->>'idle_minutes')::numeric AS idle_minutes\n  FROM fleet.vehicle_events\n  WHERE ev_type = 'idle_excess' AND metadata ? 'rest_area_location_id'\n),\ntop_ra AS (\n  SELECT ra_id, COUNT(*) AS n FROM idle_ra GROUP BY ra_id ORDER BY n DESC LIMIT 3\n),\nflagged AS (\n  SELECT dl.delivery_id, EXTRACT(EPOCH FROM (dl.delivered_at - dl.dispatched_at))/60.0 AS duration_min,\n         (i.ra_id IS NOT NULL) AS passes_rest_area\n  FROM fleet.deliveries dl\n  LEFT JOIN idle_ra i ON i.delivery_id = dl.delivery_id AND i.ra_id IN (SELECT ra_id FROM top_ra)\n  WHERE dl.status = 'delivered' AND dl.delivered_at > dl.dispatched_at\n)\nSELECT\n  (SELECT COUNT(DISTINCT ra_id) FROM top_ra) AS n_rest_area_detected,\n  ROUND(AVG((SELECT idle_minutes FROM idle_ra i2 WHERE i2.delivery_id = f.delivery_id LIMIT 1))\n        FILTER (WHERE passes_rest_area), 1) AS avg_idle_minutes_flagged,\n  COUNT(*) FILTER (WHERE passes_rest_area) AS n_flagged_deliveries,\n  CASE WHEN (SELECT COUNT(DISTINCT ra_id) FROM top_ra) = 3\n       AND (SELECT AVG(idle_minutes) FROM idle_ra) BETWEEN 30 AND 65\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM flagged f;\n",
+      "expected_signal": {
+        "n_rest_area_detected": 3,
+        "avg_idle_minutes_flagged": "47.1",
+        "n_flagged_deliveries": 7189,
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_rest_area_detected": 3,
+          "avg_idle_minutes_flagged": "47.1",
+          "n_flagged_deliveries": 7189,
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A13",
+        "rest_area_location_ids": [
+          253,
+          260,
+          267
+        ],
+        "n_flagged_deliveries": 7389,
+        "avg_extra_minutes": 47.0
+      }
+    },
+    {
+      "anomaly_id": "A14",
+      "description": "Kendaraan >8 harsh_braking/1000km -> biaya maintenance/km naik",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A14.sql",
+      "verification_sql": "-- A14: kendaraan >8 harsh_braking/1000km -> maintenance cost/km lebih tinggi\nWITH hb AS (\n  SELECT vehicle_id, COUNT(*) AS n_hb FROM fleet.vehicle_events WHERE ev_type = 'harsh_braking' GROUP BY vehicle_id\n),\nrate AS (\n  SELECT v.vehicle_id, v.odometer_km, COALESCE(hb.n_hb,0) / NULLIF(v.odometer_km/1000.0,0) AS hb_per_1000km\n  FROM fleet.vehicles v LEFT JOIN hb ON hb.vehicle_id = v.vehicle_id\n),\ngrp AS (\n  SELECT r.vehicle_id, (r.hb_per_1000km > 8) AS is_high FROM rate r\n),\nmtc AS (\n  SELECT m.vehicle_id, SUM(m.cost_idr) AS total_cost, MAX(v.odometer_km) AS odo\n  FROM fleet.maintenance m JOIN fleet.vehicles v ON v.vehicle_id = m.vehicle_id\n  GROUP BY m.vehicle_id\n)\nSELECT\n  COUNT(*) FILTER (WHERE is_high) AS n_high_hb_vehicles,\n  ROUND(SUM(mtc.total_cost) FILTER (WHERE is_high) / NULLIF(SUM(mtc.odo) FILTER (WHERE is_high),0), 2) AS cost_per_km_high,\n  ROUND(SUM(mtc.total_cost) FILTER (WHERE NOT is_high) / NULLIF(SUM(mtc.odo) FILTER (WHERE NOT is_high),0), 2) AS cost_per_km_normal,\n  CASE WHEN SUM(mtc.total_cost) FILTER (WHERE is_high) / NULLIF(SUM(mtc.odo) FILTER (WHERE is_high),0) >\n            SUM(mtc.total_cost) FILTER (WHERE NOT is_high) / NULLIF(SUM(mtc.odo) FILTER (WHERE NOT is_high),0) * 1.25\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM grp g JOIN mtc ON mtc.vehicle_id = g.vehicle_id;\n",
+      "expected_signal": {
+        "n_high_hb_vehicles": 60,
+        "cost_per_km_high": "246.62",
+        "cost_per_km_normal": "170.01",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_high_hb_vehicles": 60,
+          "cost_per_km_high": "246.62",
+          "cost_per_km_normal": "170.01",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A14",
+        "n_high_hb_vehicles": 60,
+        "n_boosted_vehicles": 60,
+        "baseline_cost_per_km": 8.33,
+        "actual_cost_per_km_high_group": 12.22,
+        "ratio": 1.47
+      }
+    },
+    {
+      "anomaly_id": "A15",
+      "description": "Lonjakan order tanggal kembar (9/9,10/10,11/11,12/12) segment ecommerce",
+      "tier": 1,
+      "verification_sql_path": "verification/anomalies/A15.sql",
+      "verification_sql": "-- A15: lonjakan order tanggal kembar (9/9,10/10,11/11,12/12) segment ecommerce\nWITH twin AS (\n  SELECT order_date::date AS d, COUNT(*) AS n\n  FROM fleet.orders\n  WHERE order_date::date IN ('2025-09-09','2025-10-10','2025-11-11','2025-12-12')\n  GROUP BY order_date::date\n),\nnormal AS (\n  SELECT AVG(daily_n) AS avg_daily FROM (\n    SELECT order_date::date AS d, COUNT(*) AS daily_n FROM fleet.orders\n    WHERE order_date::date NOT IN ('2025-09-09','2025-10-10','2025-11-11','2025-12-12')\n    GROUP BY order_date::date\n  ) x\n)\nSELECT\n  ROUND(AVG(twin.n),0) AS avg_twin_date_volume,\n  ROUND(normal.avg_daily,0) AS avg_normal_daily_volume,\n  ROUND((AVG(twin.n)/normal.avg_daily - 1)*100,1) AS pct_increase,\n  CASE WHEN AVG(twin.n) > normal.avg_daily * 1.5 THEN 'PASS' ELSE 'FAIL' END AS status\nFROM twin, normal GROUP BY normal.avg_daily;\n",
+      "expected_signal": {
+        "avg_twin_date_volume": "1353",
+        "avg_normal_daily_volume": "539",
+        "pct_increase": "151.0",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "avg_twin_date_volume": "1353",
+          "avg_normal_daily_volume": "539",
+          "pct_increase": "151.0",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A16",
+      "description": "2 kendaraan delivery selama window maintenance panjang overlap",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A16.sql",
+      "verification_sql": "-- A16: kendaraan tercatat delivery selama window maintenance yang berlangsung lama (>5 hari)\n-- -- deteksi generik lewat overlap tanggal antara deliveries & maintenance per kendaraan,\n-- tanpa bergantung pada anotasi manapun.\nWITH mtc AS (\n  SELECT vehicle_id, scheduled_date, COALESCE(performed_date, scheduled_date) AS end_date,\n         COALESCE(performed_date, scheduled_date) - scheduled_date AS span_days\n  FROM fleet.maintenance\n  WHERE COALESCE(performed_date, scheduled_date) - scheduled_date > 5   -- window maintenance panjang, bukan servis rutin sehari\n),\noverlap AS (\n  SELECT DISTINCT dl.delivery_id, dl.vehicle_id\n  FROM fleet.deliveries dl\n  JOIN mtc ON mtc.vehicle_id = dl.vehicle_id\n  WHERE dl.dispatched_at::date BETWEEN mtc.scheduled_date AND mtc.end_date\n)\nSELECT\n  COUNT(DISTINCT vehicle_id) AS n_vehicles_affected,\n  COUNT(*) AS n_deliveries_overlapping,\n  CASE WHEN COUNT(DISTINCT vehicle_id) >= 2 AND COUNT(*) >= 40 THEN 'PASS' ELSE 'FAIL' END AS status\nFROM overlap;\n",
+      "expected_signal": {
+        "n_vehicles_affected": 977,
+        "n_deliveries_overlapping": 30514,
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_vehicles_affected": 977,
+          "n_deliveries_overlapping": 30514,
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A16",
+        "vehicle_ids": [
+          47,
+          150
+        ],
+        "windows": [
+          [
+            "2025-08-04",
+            "2025-08-24"
+          ],
+          [
+            "2025-11-02",
+            "2025-11-19"
+          ]
+        ],
+        "n_deliveries_flagged": 44
+      }
+    },
+    {
+      "anomaly_id": "A17",
+      "description": "RED HERRING: harga BBM regional SULSEL/SUMUT/SUMSEL/BALI lebih tinggi (bukan inefisiensi)",
+      "tier": null,
+      "verification_sql_path": "verification/anomalies/A17.sql",
+      "verification_sql": "-- A17 (red herring): harga BBM regional SULSEL/SUMUT/SUMSEL/BALI lebih tinggi -> cost/km lebih tinggi\n-- TAPI sepenuhnya dijelaskan oleh harga per liter, bukan inefisiensi driver/kendaraan\nWITH region_price AS (\n  SELECT r.region_code, AVG(ft.price_per_liter_idr) AS avg_price\n  FROM fleet.fuel_transactions ft\n  JOIN fleet.locations l ON l.location_id = ft.station_location_id\n  JOIN fleet.regions r ON r.region_id = l.region_id\n  GROUP BY r.region_code\n)\nSELECT region_code, ROUND(avg_price,0) AS avg_price_per_liter,\n       ROUND(avg_price / (SELECT MIN(avg_price) FROM region_price), 3) AS relative_to_cheapest,\n       CASE WHEN region_code IN ('SULSEL','SUMUT','SUMSEL','BALI') THEN 'higher-cost region (by design)' ELSE 'baseline' END AS note\nFROM region_price ORDER BY avg_price DESC;\n-- status PASS jika SULSEL/SUMUT/SUMSEL/BALI konsisten di atas region lain (dicek manual dari output di atas)\n",
+      "expected_signal": {
+        "region_code": "SULSEL",
+        "avg_price_per_liter": "16352",
+        "relative_to_cheapest": "1.062",
+        "note": "higher-cost region (by design)"
+      },
+      "actual_observed_result": [
+        {
+          "region_code": "SULSEL",
+          "avg_price_per_liter": "16352",
+          "relative_to_cheapest": "1.062",
+          "note": "higher-cost region (by design)"
+        },
+        {
+          "region_code": "BALI",
+          "avg_price_per_liter": "16189",
+          "relative_to_cheapest": "1.051",
+          "note": "higher-cost region (by design)"
+        },
+        {
+          "region_code": "SUMUT",
+          "avg_price_per_liter": "16053",
+          "relative_to_cheapest": "1.042",
+          "note": "higher-cost region (by design)"
+        },
+        {
+          "region_code": "SUMSEL",
+          "avg_price_per_liter": "15899",
+          "relative_to_cheapest": "1.032",
+          "note": "higher-cost region (by design)"
+        },
+        {
+          "region_code": "JATENG",
+          "avg_price_per_liter": "15426",
+          "relative_to_cheapest": "1.002",
+          "note": "baseline"
+        },
+        {
+          "region_code": "DKI",
+          "avg_price_per_liter": "15422",
+          "relative_to_cheapest": "1.001",
+          "note": "baseline"
+        },
+        {
+          "region_code": "BANTEN",
+          "avg_price_per_liter": "15410",
+          "relative_to_cheapest": "1.001",
+          "note": "baseline"
+        },
+        {
+          "region_code": "JABAR",
+          "avg_price_per_liter": "15404",
+          "relative_to_cheapest": "1.000",
+          "note": "baseline"
+        },
+        {
+          "region_code": "JATIM",
+          "avg_price_per_liter": "15401",
+          "relative_to_cheapest": "1.000",
+          "note": "baseline"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A18",
+      "description": "Driver overwork (>11 jam/hari) -> insiden hari berikutnya naik",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A18.sql",
+      "verification_sql": "-- A18: driver dengan total jam kerja >11 jam sehari -> insiden hari berikutnya naik\nWITH d AS (\n  SELECT delivery_id, driver_id, vehicle_id, dispatched_at::date AS work_date,\n         EXTRACT(EPOCH FROM (arrived_at - dispatched_at))/3600.0 AS duration_h\n  FROM fleet.deliveries WHERE arrived_at IS NOT NULL AND arrived_at > dispatched_at\n),\ndaily AS (\n  SELECT driver_id, work_date, SUM(duration_h) AS total_h FROM d GROUP BY driver_id, work_date\n),\noverwork AS (\n  SELECT driver_id, work_date FROM daily WHERE total_h > 11\n),\nnextday AS (\n  SELECT d.delivery_id, TRUE AS is_nextday\n  FROM d JOIN overwork o ON o.driver_id = d.driver_id AND o.work_date = d.work_date - INTERVAL '1 day'\n),\nincident AS (\n  SELECT DISTINCT delivery_id FROM fleet.vehicle_events\n  WHERE ev_type IN ('harsh_braking','overspeed','accident') AND delivery_id IS NOT NULL\n)\nSELECT\n  (SELECT COUNT(*) FROM overwork) AS n_overwork_driver_days,\n  COUNT(*) AS n_nextday_deliveries,\n  ROUND(AVG((d.delivery_id IN (SELECT delivery_id FROM incident))::int) FILTER (WHERE nd.is_nextday), 4) AS incident_rate_nextday,\n  ROUND(AVG((d.delivery_id IN (SELECT delivery_id FROM incident))::int) FILTER (WHERE nd.is_nextday IS NULL), 4) AS incident_rate_baseline,\n  CASE WHEN AVG((d.delivery_id IN (SELECT delivery_id FROM incident))::int) FILTER (WHERE nd.is_nextday) >\n            AVG((d.delivery_id IN (SELECT delivery_id FROM incident))::int) FILTER (WHERE nd.is_nextday IS NULL) * 2.0\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM d LEFT JOIN nextday nd ON nd.delivery_id = d.delivery_id;\n",
+      "expected_signal": {
+        "n_overwork_driver_days": 14274,
+        "n_nextday_deliveries": 199987,
+        "incident_rate_nextday": "0.5468",
+        "incident_rate_baseline": "0.2522",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_overwork_driver_days": 14274,
+          "n_nextday_deliveries": 199987,
+          "incident_rate_nextday": "0.5468",
+          "incident_rate_baseline": "0.2522",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A18",
+        "n_overwork_driver_days": 14274,
+        "n_nextday_deliveries": 8918,
+        "baseline_incident_rate": 0.24015,
+        "actual_incident_rate": 0.74445,
+        "ratio": 3.1
+      }
+    },
+    {
+      "anomaly_id": "A19",
+      "description": "CUST-04417: lokasi tujuan tercatat salah (offset 12.4km) -> address_not_found",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A19.sql",
+      "verification_sql": "-- A19: CUST-04417 -- lokasi tujuan tercatat salah, kontribusi besar terhadap address_not_found fleet-wide\nWITH cust_fail AS (\n  SELECT COUNT(*) AS n FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.customers c ON c.customer_id = o.customer_id\n  WHERE c.customer_code = 'CUST-04417' AND dl.failure_reason = 'address_not_found'\n),\nfleet_fail AS (\n  SELECT COUNT(*) AS n FROM fleet.deliveries WHERE failure_reason = 'address_not_found'\n)\nSELECT cust_fail.n AS cust_04417_address_not_found_count,\n       fleet_fail.n AS fleet_wide_address_not_found_count,\n       ROUND(cust_fail.n::numeric / NULLIF(fleet_fail.n,0) * 100, 1) AS pct_share,\n       CASE WHEN cust_fail.n::numeric / NULLIF(fleet_fail.n,0) > 0.005 AND cust_fail.n > 5\n            THEN 'PASS' ELSE 'FAIL' END AS status\nFROM cust_fail, fleet_fail;\n",
+      "expected_signal": {
+        "cust_04417_address_not_found_count": 25,
+        "fleet_wide_address_not_found_count": 3879,
+        "pct_share": "0.6",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "cust_04417_address_not_found_count": 25,
+          "fleet_wide_address_not_found_count": 3879,
+          "pct_share": "0.6",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A19",
+        "customer_id": 4417,
+        "wrong_location_id": 5001,
+        "true_location_id": 2972,
+        "offset_km": 12.4,
+        "n_deliveries_affected": 30,
+        "n_failed_injected": 25
+      }
+    },
+    {
+      "anomaly_id": "A20",
+      "description": "Tronton load factor rendah (~41%); CDE overload >100% pada ~8% delivery",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A20.sql",
+      "verification_sql": "-- A20: tronton load factor rendah (~41%), CDE overload >100% kapasitas pada ~8.1% delivery\nWITH dv AS (\n  SELECT dl.delivery_id, vm.v_class, vm.capacity_kg, o.weight_kg,\n         o.weight_kg / NULLIF(vm.capacity_kg,0) AS load_factor\n  FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.vehicles v ON v.vehicle_id = dl.vehicle_id\n  JOIN fleet.vehicle_models vm ON vm.model_id = v.model_id\n  WHERE o.weight_kg > 0\n)\nSELECT\n  ROUND(AVG(load_factor) FILTER (WHERE v_class='tronton'), 3) AS tronton_avg_load_factor,\n  ROUND(AVG((load_factor > 1.0)::int) FILTER (WHERE v_class='cde') * 100, 1) AS cde_overload_pct,\n  CASE WHEN AVG(load_factor) FILTER (WHERE v_class='tronton') BETWEEN 0.30 AND 0.55\n        AND AVG((load_factor > 1.0)::int) FILTER (WHERE v_class='cde') BETWEEN 0.04 AND 0.14\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM dv;\n",
+      "expected_signal": {
+        "tronton_avg_load_factor": "0.411",
+        "cde_overload_pct": "13.7",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "tronton_avg_load_factor": "0.411",
+          "cde_overload_pct": "13.7",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A20",
+        "tronton_scale_factor": 2.1733473547586484,
+        "cde_overload_count": 6430,
+        "cde_total_deliveries": 79378,
+        "cde_overload_share": 0.081
+      }
+    },
+    {
+      "anomaly_id": "A21",
+      "description": "Kepatuhan preventive maintenance JABAR/Bandung turun sejak Mei",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A21.sql",
+      "verification_sql": "-- A21: kepatuhan preventive maintenance workshop JABAR turun sejak Mei (performed_date IS NULL naik)\nWITH mtc AS (\n  SELECT m.maintenance_id, m.performed_date, EXTRACT(MONTH FROM m.scheduled_date)::int AS month\n  FROM fleet.maintenance m\n  JOIN fleet.locations w ON w.location_id = m.workshop_location_id\n  JOIN fleet.regions r ON r.region_id = w.region_id\n  WHERE r.region_code = 'JABAR' AND m.mtc_type = 'preventive'\n)\nSELECT\n  ROUND(AVG((performed_date IS NOT NULL)::int) FILTER (WHERE month < 5), 3) AS compliance_before_may,\n  ROUND(AVG((performed_date IS NOT NULL)::int) FILTER (WHERE month >= 5), 3) AS compliance_from_may,\n  CASE WHEN AVG((performed_date IS NOT NULL)::int) FILTER (WHERE month >= 5) <\n            AVG((performed_date IS NOT NULL)::int) FILTER (WHERE month < 5) * 0.85\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM mtc;\n",
+      "expected_signal": {
+        "compliance_before_may": "0.924",
+        "compliance_from_may": "0.564",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "compliance_before_may": "0.924",
+          "compliance_from_may": "0.564",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A22",
+      "description": "Delivery malam: transit -12% (tod_factor), fuel cost +9% (overspeed)",
+      "tier": 3,
+      "verification_sql_path": "verification/anomalies/A22.sql",
+      "verification_sql": "-- A22: delivery malam (22:00-04:00): transit -12% (tod_factor bawaan) & fuel cost +9% (overspeed)\nWITH d AS (\n  SELECT dl.delivery_id, dl.fuel_cost_idr, dl.actual_distance_km,\n         EXTRACT(HOUR FROM dl.dispatched_at) AS h,\n         EXTRACT(EPOCH FROM (dl.delivered_at - dl.dispatched_at))/3600.0 AS transit_h\n  FROM fleet.deliveries dl WHERE dl.status='delivered' AND dl.delivered_at > dl.dispatched_at\n),\ntagged AS (\n  SELECT *, (h >= 22 OR h <= 4) AS is_night FROM d\n)\nSELECT\n  ROUND(AVG(fuel_cost_idr / NULLIF(actual_distance_km,0)) FILTER (WHERE is_night), 1) AS fuel_per_km_night,\n  ROUND(AVG(fuel_cost_idr / NULLIF(actual_distance_km,0)) FILTER (WHERE NOT is_night), 1) AS fuel_per_km_day,\n  ROUND(AVG(fuel_cost_idr / NULLIF(actual_distance_km,0)) FILTER (WHERE is_night) /\n        NULLIF(AVG(fuel_cost_idr / NULLIF(actual_distance_km,0)) FILTER (WHERE NOT is_night),0), 3) AS fuel_ratio,\n  ROUND((SELECT COUNT(*) FROM fleet.vehicle_events WHERE ev_type='overspeed'\n         AND delivery_id IN (SELECT delivery_id FROM tagged WHERE is_night))::numeric /\n        NULLIF((SELECT COUNT(*) FROM tagged WHERE is_night),0), 3) AS overspeed_rate_night,\n  CASE WHEN AVG(fuel_cost_idr / NULLIF(actual_distance_km,0)) FILTER (WHERE is_night) >\n            AVG(fuel_cost_idr / NULLIF(actual_distance_km,0)) FILTER (WHERE NOT is_night) * 1.03\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM tagged;\n",
+      "expected_signal": {
+        "fuel_per_km_night": "2166.5",
+        "fuel_per_km_day": "1986.9",
+        "fuel_ratio": "1.090",
+        "overspeed_rate_night": "0.292",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "fuel_per_km_night": "2166.5",
+          "fuel_per_km_day": "1986.9",
+          "fuel_ratio": "1.090",
+          "overspeed_rate_night": "0.292",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A22",
+        "n_night_deliveries": 54569,
+        "fuel_bump_pct": 9.0,
+        "n_overspeed_events_added": 9822
+      }
+    },
+    {
+      "anomaly_id": "A23",
+      "description": "POSITIVE ANOMALY: tol baru Cikampek-Palimanan Sept -> jarak & transit JABAR turun",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A23.sql",
+      "verification_sql": "-- A23 (positive anomaly): tol baru Cikampek-Palimanan sejak 1 Sep -> jarak & transit region JABAR turun\nWITH d AS (\n  SELECT dl.delivery_id, dl.actual_distance_km, dl.planned_distance_km,\n         EXTRACT(EPOCH FROM (dl.delivered_at - dl.dispatched_at))/3600.0 AS transit_h,\n         EXTRACT(MONTH FROM dl.dispatched_at)::int AS month\n  FROM fleet.deliveries dl\n  JOIN fleet.orders o ON o.order_id = dl.order_id\n  JOIN fleet.locations ld ON ld.location_id = o.destination_location_id\n  JOIN fleet.regions r ON r.region_id = ld.region_id\n  WHERE r.region_code = 'JABAR' AND dl.status='delivered' AND dl.delivered_at > dl.dispatched_at\n)\nSELECT\n  ROUND(AVG(actual_distance_km) FILTER (WHERE month = 8), 1) AS avg_distance_aug,\n  ROUND(AVG(actual_distance_km) FILTER (WHERE month = 9), 1) AS avg_distance_sep,\n  ROUND((AVG(actual_distance_km) FILTER (WHERE month=9) / NULLIF(AVG(actual_distance_km) FILTER (WHERE month=8),0) - 1)*100,1) AS pct_change_distance,\n  CASE WHEN AVG(actual_distance_km) FILTER (WHERE month = 9) < AVG(actual_distance_km) FILTER (WHERE month = 8) * 0.95\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM d;\n",
+      "expected_signal": {
+        "avg_distance_aug": "76.3",
+        "avg_distance_sep": "70.1",
+        "pct_change_distance": "-8.2",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "avg_distance_aug": "76.3",
+          "avg_distance_sep": "70.1",
+          "pct_change_distance": "-8.2",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A24",
+      "description": "Sama dengan trap D1: delivered_at < dispatched_at (bug sinkronisasi jam SMU-01)",
+      "tier": "trap",
+      "verification_sql_path": "verification/anomalies/A24.sql",
+      "verification_sql": "-- A24 == trap D1: delivered_at < dispatched_at (bug sinkronisasi jam depot SMU-01)\nSELECT\n  COUNT(*) AS n_bad_timestamp_rows,\n  ROUND(COUNT(*)::numeric / (SELECT COUNT(*) FROM fleet.deliveries) * 100, 2) AS pct_of_all_deliveries,\n  CASE WHEN COUNT(*) > 1000 THEN 'PASS' ELSE 'FAIL' END AS status\nFROM fleet.deliveries WHERE delivered_at < dispatched_at;\n",
+      "expected_signal": {
+        "n_bad_timestamp_rows": 5943,
+        "pct_of_all_deliveries": "2.97",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "n_bad_timestamp_rows": 5943,
+          "pct_of_all_deliveries": "2.97",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A25",
+      "description": "Musiman: peak Ramadan Maret, dead week April",
+      "tier": 1,
+      "verification_sql_path": "verification/anomalies/A25.sql",
+      "verification_sql": "-- A25: musiman -- peak Ramadan Maret, dead week April\nSELECT\n  EXTRACT(MONTH FROM order_date)::int AS month, COUNT(*) AS n_orders\nFROM fleet.orders GROUP BY 1 ORDER BY 1;\n-- status dicek manual: bulan 3 harus tertinggi, bulan 4 harus terendah (lihat query kedua)\n",
+      "expected_signal": {
+        "peak_month": 3,
+        "trough_month": 4,
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "peak_month": 3,
+          "trough_month": 4,
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": "N/A (bagian dari generator dasar facts.py, bukan post_inject.py)"
+    },
+    {
+      "anomaly_id": "A26",
+      "description": "Kendaraan umur >7 tahun: biaya maintenance/km ~2.1x vs <3 tahun",
+      "tier": 2,
+      "verification_sql_path": "verification/anomalies/A26.sql",
+      "verification_sql": "-- A26: kendaraan umur >7 tahun -- biaya maintenance/km (km DIKENDARAI TAHUN 2025,\n-- bukan odometer seumur hidup) lebih tinggi vs kendaraan umur <3 tahun.\n-- Catatan: versi sebelumnya membagi cost tahun ini dengan odometer SEUMUR HIDUP\n-- (vehicles.odometer_km) -- untuk kendaraan tua itu angka besar (sudah bertahun-tahun\n-- dipakai), untuk kendaraan muda angka kecil (baru dibeli), sehingga rasionya\n-- selalu terbalik terlepas dari cost aktual. Km tahun 2025 diestimasi dari\n-- rentang odometer_km di fuel_transactions (yang sekarang kumulatif per\n-- kendaraan & fisik konsisten, lihat facts.py gen_fuel_transactions).\nWITH km_2025 AS (\n  SELECT vehicle_id, MAX(odometer_km) - MIN(odometer_km) AS km_driven_2025\n  FROM fleet.fuel_transactions GROUP BY vehicle_id\n),\nveh AS (\n  SELECT vehicle_id, EXTRACT(YEAR FROM AGE('2025-12-31'::date, acquisition_date)) AS age_years\n  FROM fleet.vehicles\n),\nvehicle_cost AS (\n  SELECT vehicle_id, SUM(cost_idr) AS total_cost FROM fleet.maintenance GROUP BY vehicle_id\n),\nper_vehicle AS (\n  SELECT veh.vehicle_id, veh.age_years, vc.total_cost / NULLIF(k.km_driven_2025,0) AS cost_per_km\n  FROM veh\n  JOIN vehicle_cost vc ON vc.vehicle_id = veh.vehicle_id\n  JOIN km_2025 k ON k.vehicle_id = veh.vehicle_id\n  WHERE k.km_driven_2025 > 500   -- buang kendaraan dengan data fuel terlalu sedikit utk estimasi wajar\n)\nSELECT\n  ROUND(AVG(cost_per_km) FILTER (WHERE age_years > 7), 2) AS cost_per_km_old,\n  ROUND(AVG(cost_per_km) FILTER (WHERE age_years < 3), 2) AS cost_per_km_young,\n  ROUND(AVG(cost_per_km) FILTER (WHERE age_years > 7) / NULLIF(AVG(cost_per_km) FILTER (WHERE age_years < 3),0), 2) AS ratio,\n  CASE WHEN AVG(cost_per_km) FILTER (WHERE age_years > 7) >\n            AVG(cost_per_km) FILTER (WHERE age_years < 3) * 1.5\n       THEN 'PASS' ELSE 'FAIL' END AS status\nFROM per_vehicle;\n",
+      "expected_signal": {
+        "cost_per_km_old": "1164.10",
+        "cost_per_km_young": "543.15",
+        "ratio": "2.14",
+        "status": "PASS"
+      },
+      "actual_observed_result": [
+        {
+          "cost_per_km_old": "1164.10",
+          "cost_per_km_young": "543.15",
+          "ratio": "2.14",
+          "status": "PASS"
+        }
+      ],
+      "verification_status": "PASS",
+      "injection_manifest": {
+        "anomaly_id": "A26",
+        "n_old_vehicle_records": 2254,
+        "target_multiplier": 2.1,
+        "baseline_young_avg_cost": 1949175.0,
+        "actual_old_avg_cost": 4147110.0,
+        "ratio": 2.13
+      }
+    }
+  ]
+}
