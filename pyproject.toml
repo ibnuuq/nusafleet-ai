@@ -11,6 +11,7 @@ dependencies = [
     "pydantic>=2.7",
     "pydantic-settings>=2.2",
     "httpx>=0.27",
+    "psycopg2-binary>=2.9",
 ]
 
 [project.optional-dependencies]
@@ -22,7 +23,6 @@ data = [
     "pandas",
     "numpy",
     "faker",
-    "psycopg2-binary",
 ]
 
 [tool.setuptools]
@@ -34,4 +34,6 @@ pythonpath = ["."]
 asyncio_mode = "auto"
 markers = [
     "live: hits a real external LLM endpoint (OpenRouter/Ollama); auto-skips if unavailable. Deselect with -m \"not live\".",
+    "db: hits the real read-only Postgres database via DATABASE_URL_RO; auto-skips if unavailable. Deselect with -m \"not db\".",
+    "slow: long-running test (e.g. exercises the 30s statement_timeout). Deselect with -m \"not slow\".",
 ]
