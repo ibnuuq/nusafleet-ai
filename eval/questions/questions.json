@@ -1,0 +1,165 @@
+{
+  "_note": "Questions only. No answers, SQL, or scoring keys -- see README.md.",
+  "questions": [
+    {
+      "id": "Q001",
+      "question": "Berapa total delivery yang berstatus delivered di 2025?"
+    },
+    {
+      "id": "Q002",
+      "question": "Berapa jumlah kendaraan aktif per depot?"
+    },
+    {
+      "id": "Q003",
+      "question": "Berapa rata-rata transit time (jam) di seluruh armada?"
+    },
+    {
+      "id": "Q004",
+      "question": "Berapa harga solar rata-rata per bulan?"
+    },
+    {
+      "id": "Q005",
+      "question": "Top 10 customer berdasarkan jumlah order"
+    },
+    {
+      "id": "Q006",
+      "question": "Berapa jumlah driver per tipe SIM?"
+    },
+    {
+      "id": "Q007",
+      "question": "Region mana dengan delay tertinggi bulan Agustus? \"delay\" = rata2 (delivered_at - promised_delivery_at) utk delivery yg lewat SLA"
+    },
+    {
+      "id": "Q008",
+      "question": "Bandingkan on-time rate Juli vs Agustus per region"
+    },
+    {
+      "id": "Q009",
+      "question": "Bulan mana volume order tertinggi dan terendah?"
+    },
+    {
+      "id": "Q010",
+      "question": "Model kendaraan mana dengan km/liter terburuk di H2 (Jul-Des)?"
+    },
+    {
+      "id": "Q011",
+      "question": "Berapa failure rate per region? (basis: seluruh attempt, bukan seluruh order)"
+    },
+    {
+      "id": "Q012",
+      "question": "Depot mana dengan deviasi jarak rencana vs aktual terbesar?"
+    },
+    {
+      "id": "Q013",
+      "question": "Bagaimana tren biaya maintenance per bulan?"
+    },
+    {
+      "id": "Q014",
+      "question": "Berapa load factor rata-rata per class kendaraan?"
+    },
+    {
+      "id": "Q015",
+      "question": "Hari apa dalam seminggu dengan failure rate tertinggi?"
+    },
+    {
+      "id": "Q016",
+      "question": "Top 10 kendaraan dengan biaya operasional per km tertinggi"
+    },
+    {
+      "id": "Q017",
+      "question": "Berapa distribusi failure_reason?"
+    },
+    {
+      "id": "Q018",
+      "question": "Segment customer mana yang paling sering melebihi SLA?"
+    },
+    {
+      "id": "Q019",
+      "question": "Kenapa failure rate di SUMUT lebih tinggi?"
+    },
+    {
+      "id": "Q020",
+      "question": "Apakah ada hubungan antara maintenance overdue dan breakdown?"
+    },
+    {
+      "id": "Q021",
+      "question": "Driver mana yang anomali, dan apa polanya?"
+    },
+    {
+      "id": "Q022",
+      "question": "Apakah ada indikasi penyalahgunaan fuel card?"
+    },
+    {
+      "id": "Q023",
+      "question": "Apakah ada data odometer yang tidak konsisten?"
+    },
+    {
+      "id": "Q024",
+      "question": "Workshop mana yang kualitas perbaikannya paling rendah?"
+    },
+    {
+      "id": "Q025",
+      "question": "Kenapa SLA breach FMCG naik sejak Juni padahal transit time stabil?"
+    },
+    {
+      "id": "Q026",
+      "question": "Apakah gaya mengemudi memengaruhi biaya maintenance?"
+    },
+    {
+      "id": "Q027",
+      "question": "Adakah customer dengan masalah data alamat?"
+    },
+    {
+      "id": "Q028",
+      "question": "Apa dampak kelelahan driver terhadap insiden?"
+    },
+    {
+      "id": "Q029",
+      "question": "Depot mana yang kepatuhan preventive maintenance-nya menurun?"
+    },
+    {
+      "id": "Q030",
+      "question": "Adakah metrik yang justru membaik di semester dua?"
+    },
+    {
+      "id": "Q031",
+      "question": "Analyze why Jakarta's operational cost increased in August. Investigate root cause, validate, and report."
+    },
+    {
+      "id": "Q032",
+      "question": "Kenapa konsumsi BBM armada naik di semester dua?"
+    },
+    {
+      "id": "Q033",
+      "question": "Kenapa breakdown meningkat di Q3?"
+    },
+    {
+      "id": "Q034",
+      "question": "Delivery performance turun Agustus -- kenapa, berapa kontribusi tiap faktor?"
+    },
+    {
+      "id": "Q035",
+      "question": "Kalau anggaran maintenance hanya cukup utk 100 kendaraan, mana yang diprioritaskan?"
+    },
+    {
+      "id": "Q036",
+      "question": "Ringkasan eksekutif 3 risiko operasional terbesar + estimasi dampak rupiah"
+    },
+    {
+      "id": "Q037",
+      "question": "Kenapa biaya per km di Makassar lebih tinggi dari Jakarta?"
+    },
+    {
+      "id": "Q038",
+      "question": "Berapa rata-rata waktu pengiriman?"
+    },
+    {
+      "id": "Q039",
+      "question": "Apakah cuaca menyebabkan lonjakan biaya Agustus?"
+    },
+    {
+      "id": "Q040",
+      "question": "Berapa profit margin per customer?"
+    }
+  ]
+}
