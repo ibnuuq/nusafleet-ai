@@ -10,9 +10,17 @@ rule that governs everything in this repo.
 - **Phase 0 (dataset foundation): COMPLETE.** 26/26 anomalies verified
   (Gate 0d), 40/40 reference questions verified (Gate 0e). See
   `run_all_gates.sh` and `verification/`, `eval/reference/`.
-- **M1 (this milestone): agent-runtime skeleton.** Config, logging, domain
-  schemas, LLM provider abstraction (Gemini/Ollama), test infrastructure.
-  No agents, no planner, no orchestration loop yet -- that starts at M2.
+- **M1 (agent-runtime skeleton): COMPLETE.** Config, logging, domain
+  schemas, test infrastructure.
+- **M3 (LLM providers): COMPLETE.** Provider-agnostic `LLMProvider`
+  contract with Gemini (via OpenRouter) and Ollama implementations.
+- **M4 (tool system): COMPLETE.** Read-only database tools:
+  `inspect_schema`, `describe_table`, `get_sample_rows`, `execute_sql`.
+- **M5 (SQL Agent): COMPLETE.** Single agent that answers a
+  natural-language question with SQL, a self-debug retry loop, and
+  evidence attached to every answer.
+- **Next:** benchmark the SQL Agent against the 40 reference questions,
+  then the planner and multi-agent orchestration loop.
 
 ## Repository layout
 
@@ -24,9 +32,9 @@ docs/internal/      Phase 0 -- ground-truth manifest. Never exposed to agents.
 schema.sql          Postgres+PostGIS schema, incl. read-only role `nusafleet_ro`.
 run_all_gates.sh    Regenerate dataset + re-run Gate 0d/0e end to end.
 
-src/                M1 -- agent runtime (this milestone)
-tests/              M1 -- unit + smoke tests
-docs/architecture/  M1 -- architecture notes
+src/                M1+ -- agent runtime (providers, tools, SQL Agent)
+tests/              M1+ -- unit + smoke tests
+docs/architecture/  M1+ -- architecture notes
 eval/questions/     M2+ -- runtime question bank (no answers)
 eval/internal/      M2+ -- internal eval artifacts (ground-truth-adjacent)
 eval/scoring/       M2+ -- evaluation metrics
@@ -110,7 +118,12 @@ Both providers implement the same `LLMProvider` contract
 (`src/models/llm/base.py`) and can be instantiated without credentials;
 failures surface at `generate()` time, not at construction time.
 
-## Explicitly out of scope for M1
+## Not built yet
 
-SQL Agent, Planner, autonomous loop, multi-agent execution, LangGraph/
-CrewAI/PydanticAI, Redis/Celery/vector DB, UI. These start at M2+.
+Planner, autonomous loop, multi-agent execution, benchmark scoring,
+HTTP API, UI. No LangGraph/CrewAI/PydanticAI, Redis/Celery or vector DB
+by design so far.
+
+## License
+
+MIT -- see `LICENSE`.
